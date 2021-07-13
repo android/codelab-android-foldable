@@ -20,59 +20,71 @@ package com.codelab.foldables.window_manager
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.TypedValue
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
-import androidx.core.util.Consumer
+import androidx.window.FoldingFeature
+import androidx.window.WindowInfoRepo
 import androidx.window.WindowLayoutInfo
-import androidx.window.WindowManager
+import androidx.window.rxjava2.currentWindowMetricsFlowable
+import androidx.window.windowInfoRepository
 import com.codelab.foldables.window_manager.databinding.ActivityMainBinding
-import java.util.concurrent.Executor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var wm: WindowManager
-    private val layoutStateChangeCallback = LayoutStateChangeCallback()
     private lateinit var binding: ActivityMainBinding
 
-    private fun runOnUiThreadExecutor(): Executor {
-        val handler = Handler(Looper.getMainLooper())
-        return Executor() {
-            handler.post(it)
-        }
-    }
+    private lateinit var windowInfoRepo: WindowInfoRepo
+    private val scope = MainScope()
 
+    @ExperimentalCoroutinesApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        wm = WindowManager(this)
+        windowInfoRepo = windowInfoRepository()
+
+        obtainWindowMetrics(windowInfoRepo)
+        onWindowLayoutInfo(windowInfoRepo, ::updateUI)
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        wm.registerLayoutChangeCallback(
-            runOnUiThreadExecutor(),
-            layoutStateChangeCallback
-        )
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        wm.unregisterLayoutChangeCallback(layoutStateChangeCallback)
+    private fun obtainWindowMetrics(windowInfoRepo: WindowInfoRepo) {
+        // Using Flowables as a way to get the window metrics
+        val metricsFlowable = windowInfoRepo.currentWindowMetricsFlowable()
+        metricsFlowable.subscribe {
+            binding.windowMetrics.text =
+                "CurrentWindowMetrics: ${it.bounds.flattenToString()}\n" +
+                    "MaximumWindowMetrics: ${windowInfoRepo.maximumWindowMetrics.bounds.flattenToString()}"
+        }
     }
 
-    private fun printLayoutStateChange(newLayoutInfo: WindowLayoutInfo) {
-        binding.windowMetrics.text =
-            "CurrentWindowMetrics: ${wm.currentWindowMetrics.bounds.flattenToString()}\n" +
-                "MaximumWindowMetrics: ${wm.maximumWindowMetrics.bounds.flattenToString()}"
+    private fun onWindowLayoutInfo(
+        windowInfoRepo: WindowInfoRepo,
+        updateUI: (windowLayoutInfo: WindowLayoutInfo) -> Unit
+    ) {
+        // Using coroutines as a way to get the window layout info
+        scope.launch {
+            windowInfoRepo.windowLayoutInfo
+                .onEach { value -> updateUI(value) }
+                .collect()
+        }
+    }
 
+    private fun updateUI(newLayoutInfo: WindowLayoutInfo) {
         binding.layoutChange.text = newLayoutInfo.toString()
-        if (newLayoutInfo.displayFeatures.size > 0) {
+        if (newLayoutInfo.displayFeatures.isNotEmpty()) {
             binding.configurationChanged.text = "Spanned across displays"
             alignViewToDeviceFeatureBoundaries(newLayoutInfo)
         } else {
@@ -85,8 +97,9 @@ class MainActivity : AppCompatActivity() {
         val set = ConstraintSet()
         set.clone(constraintLayout)
 
-        //We get the display feature bounds.
-        val rect = newLayoutInfo.displayFeatures[0].bounds
+        //We get the folding feature bounds.
+        val foldingFeature = newLayoutInfo.displayFeatures.get(0) as FoldingFeature
+        val rect = foldingFeature.bounds
 
         //Sets the view to match the height and width of the device feature
         set.constrainHeight(
@@ -104,15 +117,13 @@ class MainActivity : AppCompatActivity() {
             ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0
         )
 
-        if (rect.top == 0) {
-            // Device feature is placed vertically
+        if (foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL) {
             set.setMargin(R.id.device_feature, ConstraintSet.START, rect.left)
             set.connect(
                 R.id.layout_change, ConstraintSet.END,
                 R.id.device_feature, ConstraintSet.START, 0
             )
         } else {
-            //Device feature is placed horizontally
             val statusBarHeight = calculateStatusBarHeight()
             val toolBarHeight = calculateToolbarHeight()
             set.setMargin(
@@ -143,11 +154,5 @@ class MainActivity : AppCompatActivity() {
         val rect = Rect()
         window.decorView.getWindowVisibleDisplayFrame(rect)
         return rect.top
-    }
-
-    inner class LayoutStateChangeCallback : Consumer<WindowLayoutInfo> {
-        override fun accept(newLayoutInfo: WindowLayoutInfo) {
-            printLayoutStateChange(newLayoutInfo)
-        }
     }
 }
