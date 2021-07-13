@@ -51,6 +51,14 @@ android {
     buildFeatures {
         viewBinding true
     }
+    // It seems there is an issue with an Android limitation already reported, when using
+    //  kotlinx-coroutines-test.
+    // https://github.com/Kotlin/kotlinx.coroutines/issues/2023#issuecomment-858644393
+    // This is the current workaround to make it working:
+    packagingOptions {
+        exclude 'META-INF/AL2.0'
+        exclude 'META-INF/LGPL2.1'
+    }
 }
 
 dependencies {
