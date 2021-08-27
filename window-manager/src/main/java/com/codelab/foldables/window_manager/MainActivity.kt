@@ -24,23 +24,21 @@ import android.util.TypedValue
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintSet
-import androidx.window.FoldingFeature
-import androidx.window.WindowInfoRepo
-import androidx.window.WindowLayoutInfo
-import androidx.window.rxjava2.currentWindowMetricsFlowable
-import androidx.window.windowInfoRepository
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoRepository
+import androidx.window.layout.WindowInfoRepository.Companion.windowInfoRepository
+import androidx.window.layout.WindowLayoutInfo
 import com.codelab.foldables.window_manager.databinding.ActivityMainBinding
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
-    private lateinit var windowInfoRepo: WindowInfoRepo
+    private lateinit var windowInfoRepository: WindowInfoRepository
     private val scope = MainScope()
 
     @ExperimentalCoroutinesApi
@@ -49,10 +47,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        windowInfoRepo = windowInfoRepository()
+        windowInfoRepository = windowInfoRepository()
 
-        obtainWindowMetrics(windowInfoRepo)
-        onWindowLayoutInfo(windowInfoRepo, ::updateUI)
+        onWindowMetricsChange(windowInfoRepository)
+        onWindowLayoutInfoChange(windowInfoRepository)
     }
 
     override fun onDestroy() {
@@ -60,25 +58,21 @@ class MainActivity : AppCompatActivity() {
         scope.cancel()
     }
 
-    private fun obtainWindowMetrics(windowInfoRepo: WindowInfoRepo) {
-        // Using Flowables as a way to get the window metrics
-        val metricsFlowable = windowInfoRepo.currentWindowMetricsFlowable()
-        metricsFlowable.subscribe {
-            binding.windowMetrics.text =
-                "CurrentWindowMetrics: ${it.bounds.flattenToString()}\n" +
-                    "MaximumWindowMetrics: ${windowInfoRepo.maximumWindowMetrics.bounds.flattenToString()}"
+    private fun onWindowMetricsChange(windowInfoRepo: WindowInfoRepository) {
+        scope.launch {
+            windowInfoRepo.currentWindowMetrics.collect {
+                binding.windowMetrics.text =
+                    "CurrentWindowMetrics: ${it.bounds.flattenToString()}"
+            }
         }
     }
 
-    private fun onWindowLayoutInfo(
-        windowInfoRepo: WindowInfoRepo,
-        updateUI: (windowLayoutInfo: WindowLayoutInfo) -> Unit
-    ) {
+    private fun onWindowLayoutInfoChange(windowInfoRepository: WindowInfoRepository) {
         // Using coroutines as a way to get the window layout info
         scope.launch {
-            windowInfoRepo.windowLayoutInfo
-                .onEach { value -> updateUI(value) }
-                .collect()
+            windowInfoRepository.windowLayoutInfo.collect { value ->
+                updateUI(value)
+            }
         }
     }
 
@@ -98,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         set.clone(constraintLayout)
 
         //We get the folding feature bounds.
-        val foldingFeature = newLayoutInfo.displayFeatures.get(0) as FoldingFeature
+        val foldingFeature = newLayoutInfo.displayFeatures[0] as FoldingFeature
         val rect = foldingFeature.bounds
 
         //Sets the view to match the height and width of the device feature
