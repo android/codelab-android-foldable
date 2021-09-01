@@ -28,6 +28,7 @@ import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoRepository
 import androidx.window.layout.WindowInfoRepository.Companion.windowInfoRepository
 import androidx.window.layout.WindowLayoutInfo
+import androidx.window.layout.WindowMetricsCalculator
 import com.codelab.foldables.window_manager.databinding.ActivityMainBinding
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.MainScope
@@ -49,7 +50,7 @@ class MainActivity : AppCompatActivity() {
 
         windowInfoRepository = windowInfoRepository()
 
-        onWindowMetricsChange(windowInfoRepository)
+        obtainWindowMetrics()
         onWindowLayoutInfoChange(windowInfoRepository)
     }
 
@@ -58,13 +59,11 @@ class MainActivity : AppCompatActivity() {
         scope.cancel()
     }
 
-    private fun onWindowMetricsChange(windowInfoRepo: WindowInfoRepository) {
-        scope.launch {
-            windowInfoRepo.currentWindowMetrics.collect {
-                binding.windowMetrics.text =
-                    "CurrentWindowMetrics: ${it.bounds.flattenToString()}"
-            }
-        }
+    private fun obtainWindowMetrics() {
+        val wmc = WindowMetricsCalculator.getOrCreate()
+        binding.windowMetrics.text =
+            "CurrentWindowMetrics: ${wmc.computeCurrentWindowMetrics(this).bounds.flattenToString()}\n" +
+                "MaximumWindowMetrics: ${wmc.computeMaximumWindowMetrics(this).bounds.flattenToString()}"
     }
 
     private fun onWindowLayoutInfoChange(windowInfoRepository: WindowInfoRepository) {
