@@ -67,7 +67,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onWindowLayoutInfoChange(windowInfoRepository: WindowInfoRepository) {
-        // Using coroutines as a way to get the window layout info
         scope.launch {
             windowInfoRepository.windowLayoutInfo.collect { value ->
                 updateUI(value)
@@ -94,43 +93,44 @@ class MainActivity : AppCompatActivity() {
         val foldingFeature = newLayoutInfo.displayFeatures[0] as FoldingFeature
         val rect = foldingFeature.bounds
 
-        //Sets the view to match the height and width of the device feature
+        //Sets the view to match the height and width of the folding feature
         set.constrainHeight(
-            R.id.device_feature,
+            R.id.folding_feature,
             rect.bottom - rect.top
         )
-        set.constrainWidth(R.id.device_feature, rect.right - rect.left)
+        set.constrainWidth(R.id.folding_feature, rect.right - rect.left)
 
         set.connect(
-            R.id.device_feature, ConstraintSet.START,
+            R.id.folding_feature, ConstraintSet.START,
             ConstraintSet.PARENT_ID, ConstraintSet.START, 0
         )
         set.connect(
-            R.id.device_feature, ConstraintSet.TOP,
+            R.id.folding_feature, ConstraintSet.TOP,
             ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0
         )
 
         if (foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL) {
-            set.setMargin(R.id.device_feature, ConstraintSet.START, rect.left)
+            set.setMargin(R.id.folding_feature, ConstraintSet.START, rect.left)
             set.connect(
                 R.id.layout_change, ConstraintSet.END,
-                R.id.device_feature, ConstraintSet.START, 0
+                R.id.folding_feature, ConstraintSet.START, 0
             )
         } else {
+            //FoldingFeature is Horizontal
             val statusBarHeight = calculateStatusBarHeight()
             val toolBarHeight = calculateToolbarHeight()
             set.setMargin(
-                R.id.device_feature, ConstraintSet.TOP,
+                R.id.folding_feature, ConstraintSet.TOP,
                 rect.top - statusBarHeight - toolBarHeight
             )
             set.connect(
                 R.id.layout_change, ConstraintSet.TOP,
-                R.id.device_feature, ConstraintSet.BOTTOM, 0
+                R.id.folding_feature, ConstraintSet.BOTTOM, 0
             )
         }
 
         //Set the view to visible and apply constraints
-        set.setVisibility(R.id.device_feature, View.VISIBLE)
+        set.setVisibility(R.id.folding_feature, View.VISIBLE)
         set.applyTo(constraintLayout)
     }
 
