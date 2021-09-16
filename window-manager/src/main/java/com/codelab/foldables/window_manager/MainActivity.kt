@@ -61,9 +61,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun obtainWindowMetrics() {
         val wmc = WindowMetricsCalculator.getOrCreate()
+        val currentWM = wmc.computeCurrentWindowMetrics(this).bounds.flattenToString()
+        val maximumWM = wmc.computeMaximumWindowMetrics(this).bounds.flattenToString()
         binding.windowMetrics.text =
-            "CurrentWindowMetrics: ${wmc.computeCurrentWindowMetrics(this).bounds.flattenToString()}\n" +
-                "MaximumWindowMetrics: ${wmc.computeMaximumWindowMetrics(this).bounds.flattenToString()}"
+            "CurrentWindowMetrics: ${currentWM}\nMaximumWindowMetrics: ${maximumWM}"
     }
 
     private fun onWindowLayoutInfoChange(windowInfoRepository: WindowInfoRepository) {
