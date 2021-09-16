@@ -94,12 +94,24 @@ class MainActivity : AppCompatActivity() {
         val foldingFeature = newLayoutInfo.displayFeatures[0] as FoldingFeature
         val rect = foldingFeature.bounds
 
+        //Some devices have a 0px width folding feature. We set a minimum of 1px so we
+        //can show the view that mirrors the folding feature in the UI and use it as reference.
+        val horizontalFoldingFeatureHeight =
+            if (rect.bottom - rect.top > 0) rect.bottom - rect.top
+            else 1
+        val verticalFoldingFeatureWidth =
+            if (rect.right - rect.left > 0) rect.right - rect.left
+            else 1
+
         //Sets the view to match the height and width of the folding feature
         set.constrainHeight(
             R.id.folding_feature,
-            rect.bottom - rect.top
+            horizontalFoldingFeatureHeight
         )
-        set.constrainWidth(R.id.folding_feature, rect.right - rect.left)
+        set.constrainWidth(
+            R.id.folding_feature,
+            verticalFoldingFeatureWidth
+        )
 
         set.connect(
             R.id.folding_feature, ConstraintSet.START,
