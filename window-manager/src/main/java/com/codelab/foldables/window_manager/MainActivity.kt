@@ -79,13 +79,13 @@ class MainActivity : AppCompatActivity() {
         binding.layoutChange.text = newLayoutInfo.toString()
         if (newLayoutInfo.displayFeatures.isNotEmpty()) {
             binding.configurationChanged.text = "Spanned across displays"
-            alignViewToDeviceFeatureBoundaries(newLayoutInfo)
+            alignViewToFoldingFeatureBounds(newLayoutInfo)
         } else {
             binding.configurationChanged.text = "One logic/physical display - unspanned"
         }
     }
 
-    private fun alignViewToDeviceFeatureBoundaries(newLayoutInfo: WindowLayoutInfo) {
+    private fun alignViewToFoldingFeatureBounds(newLayoutInfo: WindowLayoutInfo) {
         val constraintLayout = binding.constraintLayout
         val set = ConstraintSet()
         set.clone(constraintLayout)
