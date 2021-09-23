@@ -62,7 +62,7 @@
 
     <!-- It's not important where this view is placed by default, it will be adjusted dynamically in runtime -->
     <View
-        android:id="@+id/device_feature"
+        android:id="@+id/folding_feature"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@android:color/holo_red_dark"
