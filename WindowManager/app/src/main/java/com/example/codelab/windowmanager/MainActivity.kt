@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+
 class MainActivity : AppCompatActivity() {
     private lateinit var windowInfoTracker: WindowInfoTracker
     private lateinit var binding: ActivityMainBinding
@@ -148,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         view: View,
         includePadding: Boolean = true
     ): Rect? {
-        // The the location of the view in window to be in the same coordinate space as the feature.
+        // Adjust the location of the view in the window to be in the same coordinate space as the feature.
         val viewLocationInWindow = IntArray(2)
         view.getLocationInWindow(viewLocationInWindow)
 
