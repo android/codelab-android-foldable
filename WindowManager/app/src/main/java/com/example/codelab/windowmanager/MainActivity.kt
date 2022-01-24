@@ -28,8 +28,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.window.layout.DisplayFeature
 import androidx.window.layout.FoldingFeature
-import androidx.window.layout.WindowInfoRepository
-import androidx.window.layout.WindowInfoRepository.Companion.windowInfoRepository
+import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
 import androidx.window.layout.WindowMetricsCalculator
 import com.example.codelab.windowmanager.databinding.ActivityMainBinding
@@ -38,7 +37,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var windowInfoRepository: WindowInfoRepository
+    private lateinit var windowInfoTracker: WindowInfoTracker
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        windowInfoRepository = windowInfoRepository()
+        windowInfoTracker = WindowInfoTracker.getOrCreate(this@MainActivity)
 
         obtainWindowMetrics()
         onWindowLayoutInfoChange()
@@ -63,9 +62,10 @@ class MainActivity : AppCompatActivity() {
     private fun onWindowLayoutInfoChange() {
         lifecycleScope.launch(Dispatchers.Main) {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                windowInfoRepository.windowLayoutInfo.collect { value ->
-                    updateUI(value)
-                }
+                windowInfoTracker.windowLayoutInfo(this@MainActivity)
+                    .collect { value ->
+                        updateUI(value)
+                    }
             }
         }
     }
